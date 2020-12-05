@@ -40,14 +40,7 @@ public class SkinnedMesh
 
         SendSkinnedMesh();
 
-        // get debug data from C++ plugin
-        Debug.Log("Vertex count from cpp: " + GetRestVertexCount());
-        Debug.Log("Face count from cpp: " + GetRestFaceCount());
-
-        // serialize for work outside of unity
-        string path = "C:/Users/Song/Documents/UDEM/ift6113/project/skinning_cor/logs/"
-                    + mesh.name;
-        Serialize(path);
+        
     }
 
     private void SendSkinnedMesh()
@@ -76,7 +69,7 @@ public class SkinnedMesh
         GCHandle gcWeights = GCHandle.Alloc(weights, GCHandleType.Pinned);
         GCHandle gcBoneCounts = GCHandle.Alloc(boneCounts, GCHandleType.Pinned);
 
-        var cppMesh = CreateMesh(gcVertices.AddrOfPinnedObject(), mesh.vertexCount,
+        var cppMesh = NativeInterface.CreateMesh(gcVertices.AddrOfPinnedObject(), mesh.vertexCount,
             gcFaces.AddrOfPinnedObject(), faces.Length / 3,
             gcWeights.AddrOfPinnedObject(), gcBoneCounts.AddrOfPinnedObject(),
             uniqueBones);
@@ -86,16 +79,16 @@ public class SkinnedMesh
         gcWeights.Free();
         gcBoneCounts.Free();
 
-        // checking for correct construction
-        for (int i = 0; i < 5; i += 3)
-        {
-            Debug.Log("Triangle " + i + ": " + faces[i] + faces[i + 1] + faces[i + 2]);
-        }
-        string errorMessage = ExtractFailureMessage( HasFailedMeshConstruction(cppMesh) );
+        // // checking for correct construction
+        // for (int i = 0; i < 5; i += 3)
+        // {
+        //     Debug.Log("Triangle " + i + ": " + faces[i] + faces[i + 1] + faces[i + 2]);
+        // }
+        string errorMessage = ExtractFailureMessage( NativeInterface.HasFailedMeshConstruction(cppMesh) );
         if (errorMessage.Equals(""))
             this._cppMesh = cppMesh;
         else{
-            DestroyMesh(cppMesh);
+            NativeInterface.DestroyMesh(cppMesh);
             throw new Exception(errorMessage);
         }
     }
@@ -103,27 +96,31 @@ public class SkinnedMesh
     private string ExtractFailureMessage(IntPtr message)
     {
         var errorMessage = Marshal.PtrToStringAnsi(message);
-        FreeErrorMessage(message);
+        NativeInterface.FreeErrorMessage(message);
         return errorMessage;
     }
 
     ~SkinnedMesh()
     {
-        DestroyMesh(this._cppMesh);
+        NativeInterface.DestroyMesh(this._cppMesh);
     }
 
     // Wrappers for DLL functions
 
     // Simple functions
-    public int GetRestVertexCount() => GetRestVertexCount(this._cppMesh);
-    public int GetRestFaceCount() => GetRestFaceCount(this._cppMesh);
-    public int GetSubdividedFaceCount() => GetSubdividedFaceCount(this._cppMesh);
-    public int GetSubdividedVertexCount() => GetSubdividedVertexCount(this._cppMesh);
+    public int GetRestVertexCount() => NativeInterface.GetRestVertexCount(this._cppMesh);
+    public int GetRestFaceCount() => NativeInterface.GetRestFaceCount(this._cppMesh);
+    public int GetSubdividedFaceCount() => NativeInterface.GetSubdividedFaceCount(this._cppMesh);
+    public int GetSubdividedVertexCount() => NativeInterface.GetSubdividedVertexCount(this._cppMesh);
     public int GetCenterCount() {
-        var count = GetCenterCount(this._cppMesh);
-        var error = ExtractFailureMessage( HasFailedGettingCentersOfRotation(_cppMesh) );
+        var count = NativeInterface.GetCenterCount(this._cppMesh);
+        var error = ExtractFailureMessage(NativeInterface.HasFailedGettingCentersOfRotation(_cppMesh) );
         if (error.Equals("")) return count;
-        else throw new Exception(error);
+        else 
+        {
+            NativeInterface.DestroyMesh(this._cppMesh);
+            throw new Exception(error);
+        }
     }
 
     // Reading centers of rotations from plugin
@@ -132,7 +129,7 @@ public class SkinnedMesh
         int count = GetCenterCount();
         var centers = new Vector3[count];
         var handle = GCHandle.Alloc(centers, GCHandleType.Pinned);
-        GetCentersOfRotation(this._cppMesh, handle.AddrOfPinnedObject(), count);
+        NativeInterface.GetCentersOfRotation(this._cppMesh, handle.AddrOfPinnedObject(), count);
         handle.Free();
         
         return centers;
@@ -140,58 +137,6 @@ public class SkinnedMesh
     
     public void Serialize(string path)
     {
-        SerializeMesh(this._cppMesh, path);
+        NativeInterface.SerializeMesh(this._cppMesh, path);
     }
-
-#if UNITY_IOS
-    const var dll = "__Internal";
-#else
-    const string dll = "skinning_COR";
-#endif
-
-#region DLLImports
-    [DllImport(dll)]
-    private static extern IntPtr CreateMesh(
-        IntPtr vertices, int vertexCount,
-        IntPtr triangles, int triangleCount,
-        IntPtr weights, IntPtr bones, int boneCount
-        );
-
-    // to handle exceptions and failures
-    [DllImport(dll)]
-    private static extern IntPtr HasFailedMeshConstruction(IntPtr mesh);
-
-    [DllImport(dll)]
-    private static extern void FreeErrorMessage(IntPtr message);
-
-    [DllImport(dll)]
-    private static extern void DestroyMesh(IntPtr mesh);
-
-    [DllImport(dll)]
-    private static extern int GetRestVertexCount(IntPtr mesh);
-
-    [DllImport(dll)]
-    private static extern int GetRestFaceCount(IntPtr mesh);
-
-    [DllImport(dll)]
-    private static extern int GetSubdividedVertexCount(IntPtr mesh);
-
-    [DllImport(dll)]
-    private static extern int GetSubdividedFaceCount(IntPtr mesh);
-
-    // get centers of rotation
-    [DllImport(dll)]
-    private static extern int GetCenterCount(IntPtr mesh);
-    
-    // vertices pointer should point to an allocated Vector3[] in C#
-    [DllImport(dll)]
-    private static extern void GetCentersOfRotation(IntPtr mesh,
-        IntPtr vertices, int vertexCount);
-
-    [DllImport(dll)]
-    private static extern IntPtr HasFailedGettingCentersOfRotation(IntPtr mesh);
-
-    [DllImport(dll)]
-    private static extern void SerializeMesh(IntPtr mesh, string path);
-#endregion
 }
