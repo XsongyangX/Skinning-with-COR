@@ -34,11 +34,11 @@ public static class NativeInterface
     [DllImport(dll)]
     public static extern int GetRestFaceCount(IntPtr mesh);
 
-    [DllImport(dll)]
-    public static extern int GetSubdividedVertexCount(IntPtr mesh);
+    // [DllImport(dll)]
+    // public static extern int GetSubdividedVertexCount(IntPtr mesh);
 
-    [DllImport(dll)]
-    public static extern int GetSubdividedFaceCount(IntPtr mesh);
+    // [DllImport(dll)]
+    // public static extern int GetSubdividedFaceCount(IntPtr mesh);
 
     // get centers of rotation
     [DllImport(dll)]
@@ -54,5 +54,14 @@ public static class NativeInterface
 
     [DllImport(dll)]
     public static extern void SerializeMesh(IntPtr mesh, string path);
+
+    [DllImport(dll)]
+    public static extern void ReadCenters(IntPtr mesh, string path);
+
+    [DllImport(dll)]
+    public static extern void SerializeCenters(IntPtr mesh, string path);
+
+    [DllImport(dll)]
+    public static extern IntPtr SerializationError(IntPtr mesh);
 #endregion
 }

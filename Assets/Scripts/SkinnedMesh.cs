@@ -1,7 +1,7 @@
 using UnityEngine;
 using System;
-using System.Collections;
 using System.Runtime.InteropServices;
+using System.IO;
 
 /// <summary>
 /// Struct for marshaling data
@@ -21,11 +21,25 @@ public struct Bone
 
 public class SkinnedMesh
 {
+    /// <summary>
+    /// Unity mesh
+    /// </summary>
     private Mesh mesh;
 
+    /// <summary>
+    /// Reference to the renderer, used for bone counts
+    /// </summary>
     private SkinnedMeshRenderer renderer;
 
+    /// <summary>
+    /// Pointer to the cpp object
+    /// </summary>
     private IntPtr _cppMesh;
+    
+    /// <summary>
+    /// File where to store the centers of rotation
+    /// </summary>
+    private string centersFile;
 
     /// <summary>
     /// Creates a skinned mesh in conjunction with cpp by copying
@@ -40,13 +54,31 @@ public class SkinnedMesh
 
         SendSkinnedMesh();
 
-        
+        // compute centers of rotation, or load it if already available
+        this.centersFile = Path.Combine(Application.streamingAssetsPath, mesh.name);
+        int centerCount;
+        if (File.Exists(this.centersFile + ".centers"))
+        {
+            ReadCenters(this.centersFile);
+            centerCount = GetCenterCount();
+        }
+        else
+        {
+            centerCount = GetCenterCount();
+            if (centerCount != 0)
+            {
+                SerializeCenters(this.centersFile);
+            }
+        }
+        Debug.Log(centerCount);
     }
 
+    /// <summary>
+    /// Instantiates a mesh object inside cpp plugin and stores
+    /// a reference to it in this class
+    /// </summary>
     private void SendSkinnedMesh()
     {
-        //if (mesh.subMeshCount > 0) Debug.Log("Submesh present: " + mesh.subMeshCount);
-
         var vertices = mesh.vertices; // Vector3[]
         var faces = mesh.triangles.Clone() as int[]; // int[]
         var nativeWeights = mesh.GetAllBoneWeights(); // NativeArray<BoneWeight1>
@@ -79,11 +111,6 @@ public class SkinnedMesh
         gcWeights.Free();
         gcBoneCounts.Free();
 
-        // // checking for correct construction
-        // for (int i = 0; i < 5; i += 3)
-        // {
-        //     Debug.Log("Triangle " + i + ": " + faces[i] + faces[i + 1] + faces[i + 2]);
-        // }
         string errorMessage = ExtractFailureMessage( NativeInterface.HasFailedMeshConstruction(cppMesh) );
         if (errorMessage.Equals(""))
             this._cppMesh = cppMesh;
@@ -93,6 +120,12 @@ public class SkinnedMesh
         }
     }
 
+    /// <summary>
+    /// Helper method that extracts a string from the pointer returned
+    /// by the cpp plugin and frees the associated memory of the C++ string
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
     private string ExtractFailureMessage(IntPtr message)
     {
         var errorMessage = Marshal.PtrToStringAnsi(message);
@@ -100,6 +133,7 @@ public class SkinnedMesh
         return errorMessage;
     }
 
+    // Destroys the cpp object
     ~SkinnedMesh()
     {
         NativeInterface.DestroyMesh(this._cppMesh);
@@ -108,10 +142,25 @@ public class SkinnedMesh
     // Wrappers for DLL functions
 
     // Simple functions
+    /// <summary>
+    /// Get the number of vertices in the rest pose, no subdivision
+    /// </summary>
+    /// <returns>Number of vertices</returns>
     public int GetRestVertexCount() => NativeInterface.GetRestVertexCount(this._cppMesh);
+
+    /// <summary>
+    /// Get the number of triangles in the rest pose, no subdivision
+    /// </summary>
+    /// <returns>Number of triangles</returns>
     public int GetRestFaceCount() => NativeInterface.GetRestFaceCount(this._cppMesh);
-    public int GetSubdividedFaceCount() => NativeInterface.GetSubdividedFaceCount(this._cppMesh);
-    public int GetSubdividedVertexCount() => NativeInterface.GetSubdividedVertexCount(this._cppMesh);
+    // public int GetSubdividedFaceCount() => NativeInterface.GetSubdividedFaceCount(this._cppMesh);
+    // public int GetSubdividedVertexCount() => NativeInterface.GetSubdividedVertexCount(this._cppMesh);
+
+    /// <summary>
+    /// Get the number of center of rotations in the mesh.
+    /// It will computed it if the number is not defined.
+    /// </summary>
+    /// <returns></returns>
     public int GetCenterCount() {
         var count = NativeInterface.GetCenterCount(this._cppMesh);
         var error = ExtractFailureMessage(NativeInterface.HasFailedGettingCentersOfRotation(_cppMesh) );
@@ -123,7 +172,10 @@ public class SkinnedMesh
         }
     }
 
-    // Reading centers of rotations from plugin
+    /// <summary>
+    /// Get a list of centers of rotations from the cpp mesh, copied
+    /// </summary>
+    /// <returns></returns>
     public Vector3[] GetCentersOfRotation()
     {
         int count = GetCenterCount();
@@ -134,9 +186,54 @@ public class SkinnedMesh
         
         return centers;
     }
-    
+
+    /// <summary>
+    /// Serialize the entire mesh on disk, including vertices,
+    /// faces, weights and centers of rotation (if available)
+    /// </summary>
+    /// <param name="path">A base name for where to store the files</param>
     public void Serialize(string path)
     {
         NativeInterface.SerializeMesh(this._cppMesh, path);
+
+        var error = ExtractFailureMessage(NativeInterface.SerializationError(this._cppMesh));
+        if (!error.Equals(""))
+        {
+            NativeInterface.DestroyMesh(this._cppMesh);
+            throw new Exception(error);
+        }
+    }
+
+    /// <summary>
+    /// Serialize the centers of rotation, if already computed.
+    /// Otherwise, it will throw an exception.
+    /// </summary>
+    /// <param name="path">A base name for where to store the file</param>
+    public void SerializeCenters(string path)
+    {
+        NativeInterface.SerializeCenters(this._cppMesh, path);
+
+        var error = ExtractFailureMessage(NativeInterface.SerializationError(this._cppMesh));
+        if (!error.Equals(""))
+        {
+            NativeInterface.DestroyMesh(this._cppMesh);
+            throw new Exception(error);
+        }
+    }
+
+    /// <summary>
+    /// Read a previously serialized file with centers of rotation
+    /// </summary>
+    /// <param name="path"></param>
+    public void ReadCenters(string path)
+    {
+        NativeInterface.ReadCenters(this._cppMesh, path);
+
+        var error = ExtractFailureMessage(NativeInterface.SerializationError(this._cppMesh));
+        if (!error.Equals(""))
+        {
+            NativeInterface.DestroyMesh(this._cppMesh);
+            throw new Exception(error);
+        }
     }
 }
