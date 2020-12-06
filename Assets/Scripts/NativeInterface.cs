@@ -63,5 +63,8 @@ public static class NativeInterface
 
     [DllImport(dll)]
     public static extern IntPtr SerializationError(IntPtr mesh);
+
+    // [DllImport(dll)]
+    // public static extern void SetMeshVertexBuffer(IntPtr mesh, IntPtr vertexBufferHandle);
 #endregion
 }

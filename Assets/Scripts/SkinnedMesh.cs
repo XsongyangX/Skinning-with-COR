@@ -70,7 +70,7 @@ public class SkinnedMesh
                 SerializeCenters(this.centersFile);
             }
         }
-        Debug.Log(centerCount);
+
     }
 
     /// <summary>
@@ -79,6 +79,11 @@ public class SkinnedMesh
     /// </summary>
     private void SendSkinnedMesh()
     {
+        // The plugin will want to modify the vertex buffer -- on many platforms
+		// for that to work we have to mark mesh as "dynamic" (which makes the buffers CPU writable --
+		// by default they are immutable and only GPU-readable).
+		mesh.MarkDynamic ();
+
         var vertices = mesh.vertices; // Vector3[]
         var faces = mesh.triangles.Clone() as int[]; // int[]
         var nativeWeights = mesh.GetAllBoneWeights(); // NativeArray<BoneWeight1>
@@ -118,6 +123,11 @@ public class SkinnedMesh
             NativeInterface.DestroyMesh(cppMesh);
             throw new Exception(errorMessage);
         }
+
+        // send pointer to the mesh buffer
+        // if (mesh.vertexBufferCount > 1)
+        //     Debug.LogWarning("There are more than one vertex buffer: " + mesh.vertexBufferCount);
+        // NativeInterface.SetMeshVertexBuffer(this._cppMesh, mesh.GetNativeVertexBufferPtr(0));
     }
 
     /// <summary>
@@ -235,5 +245,13 @@ public class SkinnedMesh
             NativeInterface.DestroyMesh(this._cppMesh);
             throw new Exception(error);
         }
+    }
+
+    /// <summary>
+    /// To be called on FixedUpdate every frame
+    /// </summary>
+    public void Animate()
+    {
+
     }
 }
