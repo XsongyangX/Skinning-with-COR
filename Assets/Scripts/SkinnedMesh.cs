@@ -89,17 +89,20 @@ public class SkinnedMesh
         var nativeWeights = mesh.GetAllBoneWeights(); // NativeArray<BoneWeight1>
         var boneCounts = mesh.GetBonesPerVertex().ToArray(); // byte[]
 
-        var uniqueBones = renderer.bones.Length;
-
         Debug.Assert(boneCounts.Length == vertices.Length, "Bone per vertex array has different length from vertex array");
 
         // copy because original struct is not interop-friendly
+        int largestBoneIndex = 0;
         Bone[] weights = new Bone[nativeWeights.Length];
         for (int i = 0; i < weights.Length; i++)
         {
             var native = nativeWeights[i];
             weights[i] = new Bone(native.boneIndex, native.weight);
+
+            largestBoneIndex = native.boneIndex > largestBoneIndex 
+                ? native.boneIndex : largestBoneIndex;
         }
+        Debug.Log($"Largest bone index in mesh {mesh.name}: {largestBoneIndex}");
 
         GCHandle gcVertices = GCHandle.Alloc(vertices, GCHandleType.Pinned);
         GCHandle gcFaces = GCHandle.Alloc(faces, GCHandleType.Pinned);
@@ -109,7 +112,7 @@ public class SkinnedMesh
         var cppMesh = NativeInterface.CreateMesh(gcVertices.AddrOfPinnedObject(), mesh.vertexCount,
             gcFaces.AddrOfPinnedObject(), faces.Length / 3,
             gcWeights.AddrOfPinnedObject(), gcBoneCounts.AddrOfPinnedObject(),
-            uniqueBones);
+            largestBoneIndex + 1);
 
         gcVertices.Free();
         gcFaces.Free();

@@ -25,15 +25,13 @@ public class AnimatorCOR : MonoBehaviour
         {
             meshes.Add(new SkinnedMesh(renderer.sharedMesh, renderer));
 
-            Debug.Log($"Bone count for {renderer.sharedMesh.name} is {renderer.bones.Length}");
+            Debug.Log($"Bone array size for {renderer.sharedMesh.name} is {renderer.bones.Length}");
         }
 
         // build the skeleton
         int boneCount;
         (this.skeletonRoot, boneCount) = BuildSkeleton(rootBone, 0);
-        Debug.Log($"The mesh has {boneCount} bones");
-
-        
+        Debug.Log($"The mesh has {boneCount} bones explored by the skeleton builder");
     }
 
     /// <summary>
@@ -51,7 +49,9 @@ public class AnimatorCOR : MonoBehaviour
         {
             var (child, innerChildrenExplored) = 
                 BuildSkeleton(bone.GetChild(i), nodesExplored + index);
+            
             node.AddChild(child);
+            
             nodesExplored += innerChildrenExplored;
         }
 
