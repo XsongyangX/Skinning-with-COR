@@ -253,8 +253,34 @@ public class SkinnedMesh
     /// <summary>
     /// To be called on FixedUpdate every frame
     /// </summary>
-    public void Animate()
+    public void Animate(Vector4[] rotations, Vector3[] translations)
     {
+        GCHandle gcRotations = GCHandle.Alloc(rotations, GCHandleType.Pinned);
+        GCHandle gcTranslations = GCHandle.Alloc(translations, GCHandleType.Pinned);
 
+        // results
+        var deformed = new Vector3[this.GetRestVertexCount()];
+        deformed.Initialize();
+        GCHandle gcDeformed = GCHandle.Alloc(deformed, GCHandleType.Pinned);
+
+        NativeInterface.Animate(this._cppMesh, gcRotations.AddrOfPinnedObject(),
+            gcTranslations.AddrOfPinnedObject(), gcDeformed.AddrOfPinnedObject());
+
+        gcRotations.Free();
+        gcTranslations.Free();
+        gcDeformed.Free();
+
+        string errorMessage = ExtractFailureMessage( NativeInterface.AnimationError(this._cppMesh));
+        if (!errorMessage.Equals(""))
+        {
+            NativeInterface.DestroyMesh(this._cppMesh);
+            throw new Exception(errorMessage);
+        }
+
+        // debug
+        for (int i = 0; i < 5; i++)
+        {
+            Debug.Log(deformed[i]);
+        }
     }
 }

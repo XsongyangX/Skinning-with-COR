@@ -16,6 +16,7 @@ public class AnimatorCOR : MonoBehaviour
     public Transform rootBone;
 
     private SkeletalRigNode skeletonRoot;
+    private int boneCount;
 
     // Start is called before the first frame update
     void Start()
@@ -29,9 +30,10 @@ public class AnimatorCOR : MonoBehaviour
         }
 
         // build the skeleton
-        int boneCount;
-        (this.skeletonRoot, boneCount) = BuildSkeleton(rootBone, 0);
+        (this.skeletonRoot, this.boneCount) = BuildSkeleton(rootBone, 0);
         Debug.Log($"The mesh has {boneCount} bones explored by the skeleton builder");
+
+        Animate(0);
     }
 
     /// <summary>
@@ -56,5 +58,41 @@ public class AnimatorCOR : MonoBehaviour
         }
 
         return (node, nodesExplored);
+    }
+
+    private Vector3[] EvaluateBoneTranslations()
+    {
+        return new Vector3[this.boneCount];
+    }
+
+    private Vector4[] EvaluateBoneRotations()
+    {
+        var identity = new Vector4[this.boneCount];
+        var identityQuaternion = Quaternion.identity;
+        
+        // debug
+        Debug.Log(identityQuaternion.ToString());
+
+        for (int i = 0; i < identity.Length; i++)
+            identity[i] = new Vector4(
+                identityQuaternion.x,
+                identityQuaternion.y,
+                identityQuaternion.z,
+                identityQuaternion.w
+            );
+        return identity;
+    }
+
+    public void Animate(float time)
+    {
+        var rotations = EvaluateBoneRotations();
+        var translations = EvaluateBoneTranslations();
+
+        Debug.Assert(rotations.Length == translations.Length);
+
+        foreach (var mesh in this.meshes)
+        {
+            mesh.Animate(rotations, translations);
+        }
     }
 }

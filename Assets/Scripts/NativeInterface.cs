@@ -66,5 +66,12 @@ public static class NativeInterface
 
     // [DllImport(dll)]
     // public static extern void SetMeshVertexBuffer(IntPtr mesh, IntPtr vertexBufferHandle);
+
+    [DllImport(dll)] 
+    public static extern void Animate(IntPtr mesh,
+        IntPtr rotations, IntPtr translations, IntPtr transformed);
+
+    [DllImport(dll)] 
+    public static extern IntPtr AnimationError(IntPtr mesh);
 #endregion
 }
