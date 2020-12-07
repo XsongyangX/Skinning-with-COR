@@ -18,6 +18,21 @@ public class AnimatorCOR : MonoBehaviour
     private SkeletalRigNode skeletonRoot;
     private int boneCount;
 
+    // Selected animations
+    public AnimationClip[] animationClips;
+
+    private float startAnimationTime;
+
+    // Animation cycle
+    private void FixedUpdate()
+    {
+        // foreach (var clip in animationClips)
+        // {
+        //     clip.SampleAnimation(this.skeletonRoot.transform.gameObject,
+        //         1);
+        // }
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -33,7 +48,12 @@ public class AnimatorCOR : MonoBehaviour
         (this.skeletonRoot, this.boneCount) = BuildSkeleton(rootBone, 0);
         Debug.Log($"The mesh has {boneCount} bones explored by the skeleton builder");
 
-        Animate(0);
+        // // debug
+        // var clip = animationClips[0];
+        // print($"Animation {clip.name} has length {clip.length}");
+        // print("Initial pose " + this.skeletonRoot.transform.localPosition.ToString());
+        // clip.SampleAnimation(this.skeletonRoot.transform.gameObject, 2f);
+        // print("Sampling 2 seconds " + this.skeletonRoot.transform.localPosition.ToString());
     }
 
     /// <summary>

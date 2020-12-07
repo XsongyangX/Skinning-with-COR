@@ -1,0 +1,15 @@
+{
+    "name": "SkinningEditor",
+    "references": [
+        "GUID:71dd05ac9985e6143804650bf4c2fbbc"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -446,6 +446,20 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 7702766, guid: 905fd9718c0fd9f4495709c299da752d, type: 3}
+      propertyPath: animationClips.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7702766, guid: 905fd9718c0fd9f4495709c299da752d, type: 3}
+      propertyPath: animationClips.Array.data[0]
+      value: 
+      objectReference: {fileID: -203655887218126122, guid: 45f6a330b3631544c8dd59a20357369e,
+        type: 3}
+    - target: {fileID: 7702766, guid: 905fd9718c0fd9f4495709c299da752d, type: 3}
+      propertyPath: animationClips.Array.data[1]
+      value: 
+      objectReference: {fileID: -203655887218126122, guid: e3e0583e1f1b86748953af7bfe3a5040,
+        type: 3}
     - target: {fileID: 3523550972886282932, guid: 905fd9718c0fd9f4495709c299da752d,
         type: 3}
       propertyPath: m_Name
@@ -504,6 +518,11 @@ PrefabInstance:
     - target: {fileID: 4300368494071785486, guid: 905fd9718c0fd9f4495709c299da752d,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7876187206855160436, guid: 905fd9718c0fd9f4495709c299da752d,
+        type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

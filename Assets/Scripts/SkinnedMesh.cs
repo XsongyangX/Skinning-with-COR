@@ -204,10 +204,10 @@ public class SkinnedMesh
     /// Serialize the entire mesh on disk, including vertices,
     /// faces, weights and centers of rotation (if available)
     /// </summary>
-    /// <param name="path">A base name for where to store the files</param>
+    /// <param name="path">A folder for where to store the files</param>
     public void Serialize(string path)
     {
-        NativeInterface.SerializeMesh(this._cppMesh, path);
+        NativeInterface.SerializeMesh(this._cppMesh, Path.Combine(path, this.mesh.name));
 
         var error = ExtractFailureMessage(NativeInterface.SerializationError(this._cppMesh));
         if (!error.Equals(""))
@@ -277,10 +277,6 @@ public class SkinnedMesh
             throw new Exception(errorMessage);
         }
 
-        // debug
-        for (int i = 0; i < 5; i++)
-        {
-            Debug.Log(deformed[i]);
-        }
+        this.mesh.SetVertices(deformed);
     }
 }

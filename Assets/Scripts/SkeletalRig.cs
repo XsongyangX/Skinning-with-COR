@@ -21,6 +21,16 @@ public class SkeletalRigNode
     public Transform transform {get;}
 
     /// <summary>
+    /// Rest rotation, world space
+    /// </summary>
+    private Quaternion restRotation;
+
+    /// <summary>
+    /// Rest position, world space
+    /// </summary>
+    private Vector3 restPosition;
+
+    /// <summary>
     /// List of child bones
     /// </summary>
     /// <typeparam name="SkeletalRigNode"></typeparam>
@@ -37,6 +47,12 @@ public class SkeletalRigNode
     {
         this.boneIndex = boneIndex;
         this.transform = transform;
+
+        var rotation = transform.rotation;
+        this.restRotation = new Quaternion(rotation.x, rotation.y, rotation.z, rotation.w);
+
+        var position = transform.position;
+        this.restPosition = new Vector3(position.x, position.y, position.z);
     }
 
     /// <summary>
