@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+
 using UnityEngine;
 
 /// <summary>
@@ -15,7 +17,19 @@ public class AnimatorCOR : MonoBehaviour
 
     public Transform rootBone;
 
-    private SkeletalRigNode skeletonRoot;
+    private SkeletalRigNode _skeletonRoot;
+
+    [HideInInspector]
+    public SkeletalRigNode skeletonRoot {
+        get {
+            if (_skeletonRoot is null) this.GetSkeletonRoot();
+            return _skeletonRoot;
+        }
+        private set {
+            _skeletonRoot = value;
+        }
+    }
+
     private int boneCount;
 
     // Selected animations
@@ -45,15 +59,26 @@ public class AnimatorCOR : MonoBehaviour
         }
 
         // build the skeleton
+        GetSkeletonRoot();
+
+        // load serialized animation curves
+        // located in streaming assets by default
+
+    }
+
+    private void GetSkeletonRoot()
+    {
         (this.skeletonRoot, this.boneCount) = BuildSkeleton(rootBone, 0);
         Debug.Log($"The mesh has {boneCount} bones explored by the skeleton builder");
+    }
 
-        // // debug
-        // var clip = animationClips[0];
-        // print($"Animation {clip.name} has length {clip.length}");
-        // print("Initial pose " + this.skeletonRoot.transform.localPosition.ToString());
-        // clip.SampleAnimation(this.skeletonRoot.transform.gameObject, 2f);
-        // print("Sampling 2 seconds " + this.skeletonRoot.transform.localPosition.ToString());
+    /// <summary>
+    /// Reads the animation curves into the skeleton
+    /// </summary>
+    /// <param name="root"></param>
+    /// <param name="path"></param>
+    private void ReadCurves(SkeletalRigNode root, string path)
+    {
     }
 
     /// <summary>

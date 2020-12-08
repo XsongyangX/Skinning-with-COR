@@ -66,4 +66,57 @@ public class SkeletalRigNode
 
     public IEnumerator<SkeletalRigNode> GetEnumerator() =>
         this.childBones.GetEnumerator();
+
+    /// <summary>
+    /// Searches the rig node and children for the name
+    /// of a matching game object
+    /// </summary>
+    /// <param name="name">Name of the object as seen in the scene hierarchy</param>
+    /// <returns>Bone index</returns>
+    public int BoneIndexRecursive(string name)
+    {
+        var split = name.Split('/');
+        var baseName = split[split.Length - 1];
+
+        if (this.transform.name.Equals(baseName))
+            return this.boneIndex;
+        else
+        {
+            if (split.Length != 1)
+            {
+                var childToExplore = split[1];
+                foreach (var child in this)
+                {
+                    if (child.transform.name.Equals(childToExplore))
+                        return child.BoneIndexRecursive(split, 1);
+                }
+            }
+            
+            throw new System.Exception($"No bone found with name {name}");
+        }
+    }
+
+    /// <summary>
+    /// Reads the path to search the bone in O(log n)
+    /// </summary>
+    /// <param name="split">Split hierarchy names</param>
+    /// <param name="atDepth">Looking at this index in the split names array</param>
+    /// <returns></returns>
+    private int BoneIndexRecursive(string[] split, int atDepth)
+    {
+
+        // reached a leaf, name was checked before calling
+        if (split.Length - 1 == atDepth)
+            return this.boneIndex;
+
+        // keep searching
+        foreach (var child in this)
+        {
+            if (child.transform.name.Equals(split[atDepth+1]))
+                return child.BoneIndexRecursive(split, atDepth + 1);
+        }
+
+        string fullPath = string.Join("/", split);
+        throw new System.Exception($"No bone found with name {fullPath}");
+    }
 }

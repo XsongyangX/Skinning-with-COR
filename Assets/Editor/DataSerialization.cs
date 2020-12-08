@@ -58,21 +58,81 @@ public class DataSerialization : EditorWindow
                 // editor binding
                 var bindings = AnimationUtility.GetCurveBindings(clip);
 
-                // animation curves
-                var curves = new List<AnimationCurve>();
+                // animation: bone index + propertyName + curves
+                var curves = new List<SerializedCurve>();
                 foreach (var binding in bindings)
                 {
-                    curves.Add(AnimationUtility.GetEditorCurve(clip, binding));
+                    // dont serialize root gameobject component animation curves
+                    if (binding.path.Equals("")) continue;
+
+                    AnimationCurve curve = AnimationUtility.GetEditorCurve(clip, binding);
+
+                    SerializedCurve serialized =
+                        new SerializedCurve(
+                            this.animated.skeletonRoot.BoneIndexRecursive(binding.path),
+                        binding.propertyName, curve
+                    );
+                    
+                    curves.Add(serialized);
                 }
 
                 System.Xml.Serialization.XmlSerializer writer =
-                    new System.Xml.Serialization.XmlSerializer(typeof(List<AnimationCurve>));
+                    new System.Xml.Serialization.XmlSerializer(typeof(List<SerializedCurve>));
 
                 var path = Path.Combine(location, clip.name + ".curves");
                 var file = File.Create(path);
 
                 writer.Serialize(file, curves);
+                file.Close();
             }
         }
+    }
+}
+
+public struct SerializedCurve
+{
+    public int boneIndex { get; }
+    public string propertyName { get; }
+    public AnimationCurve curve;
+
+    public SerializedCurve(int boneIndex, string propertyName, AnimationCurve curve)
+    {
+        this.boneIndex = boneIndex;
+        this.propertyName = propertyName;
+        this.curve = curve;
+    }
+
+    public override bool Equals(object obj)
+    {
+        return obj is SerializedCurve other &&
+               boneIndex == other.boneIndex &&
+               propertyName == other.propertyName &&
+               EqualityComparer<AnimationCurve>.Default.Equals(curve, other.curve);
+    }
+
+    public override int GetHashCode()
+    {
+        int hashCode = 341329424;
+        hashCode = hashCode * -1521134295 + boneIndex.GetHashCode();
+        hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(propertyName);
+        hashCode = hashCode * -1521134295 + EqualityComparer<AnimationCurve>.Default.GetHashCode(curve);
+        return hashCode;
+    }
+
+    public void Deconstruct(out int item1, out string item2, out AnimationCurve item3)
+    {
+        item1 = boneIndex;
+        item2 = propertyName;
+        item3 = curve;
+    }
+
+    public static implicit operator (int, string, AnimationCurve)(SerializedCurve value)
+    {
+        return (value.boneIndex, value.propertyName, value.curve);
+    }
+
+    public static implicit operator SerializedCurve((int, string, AnimationCurve) value)
+    {
+        return new SerializedCurve(value.Item1, value.Item2, value.Item3);
     }
 }
