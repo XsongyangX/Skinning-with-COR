@@ -4,6 +4,72 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
+/// Wrapper class on the rig
+/// </summary>
+public class Skeleton
+{
+    private SkeletalRigNode rootNode { get => this[0]; }
+
+    private List<SkeletalRigNode> _indexed;
+
+    public SkeletalRigNode this[int index]
+    {
+        get => this._indexed[index];
+    }
+
+    public Skeleton(Transform rootBone)
+    {
+        BuildSkeleton(rootBone, 0);
+    }
+
+    /// <summary>
+    /// Builds a skeleton recursive using DFS and currying
+    /// </summary>
+    /// <param name="bone">Transform of the bone in the hierarchy</param>
+    /// <param name="index">Index of the bone, 0 for the root and +1 down the list</param>
+    /// <returns>Node and number of nodes explored</returns>
+    private (SkeletalRigNode, int) BuildSkeleton(Transform bone, int index)
+    {
+        var node = new SkeletalRigNode(index, bone);
+        this._indexed.Add(node);
+
+        int nodesExplored = 1;
+        // exploration
+        for (int i = 0; i < bone.childCount; i++)
+        {
+            var (child, innerChildrenExplored) =
+                BuildSkeleton(bone.GetChild(i), nodesExplored + index);
+
+            node.AddChild(child);
+
+            nodesExplored += innerChildrenExplored;
+        }
+
+        return (node, nodesExplored);
+    }
+
+    /// <summary>
+    /// Change the rotations from local to world space
+    /// </summary>
+    /// <param name="rotations">Ordered by bone index</param>
+    /// <returns>Ordered by bone index</returns>
+    public Quaternion[] FromLocalToWorld(Quaternion[] rotations)
+    {
+        return null;
+    }
+
+    /// <summary>
+    /// Change the translations from local to world space
+    /// </summary>
+    /// <param name="translations">Ordered by bone index</param>
+    /// <returns>Ordered by bone index</returns>
+    public Vector3[] FromLocalToWorld(Vector3[] translations)
+    {
+        throw new System.NotImplementedException();
+    }
+}
+
+/// <summary>
 /// A recursive structure holding the skeleton rig of
 /// the model
 /// </summary>

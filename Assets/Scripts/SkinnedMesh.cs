@@ -7,7 +7,7 @@ using System.IO;
 /// Struct for marshaling data
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-public struct Bone
+struct Bone
 {
     public int vertexIndex;
     public float weight;
@@ -53,6 +53,8 @@ public class SkinnedMesh
         this.renderer = renderer;
 
         SendSkinnedMesh();
+
+        // Debug.Log($"Vertex count : {GetRestVertexCount()}, face count: {GetRestFaceCount()}");
 
         // compute centers of rotation, or load it if already available
         this.centersFile = Path.Combine(Application.streamingAssetsPath, mesh.name);

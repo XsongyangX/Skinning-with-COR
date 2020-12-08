@@ -460,6 +460,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: -203655887218126122, guid: e3e0583e1f1b86748953af7bfe3a5040,
         type: 3}
+    - target: {fileID: 7702766, guid: 905fd9718c0fd9f4495709c299da752d, type: 3}
+      propertyPath: dataPoint
+      value: 
+      objectReference: {fileID: 99840881362098319, guid: 185b5d2744e0aa349b97d2bdb42cb11f,
+        type: 3}
     - target: {fileID: 3523550972886282932, guid: 905fd9718c0fd9f4495709c299da752d,
         type: 3}
       propertyPath: m_Name

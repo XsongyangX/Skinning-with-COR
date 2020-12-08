@@ -17,34 +17,52 @@ public class AnimatorCOR : MonoBehaviour
 
     public Transform rootBone;
 
-    private SkeletalRigNode _skeletonRoot;
+    public GameObject dataPoint;
 
     [HideInInspector]
-    public SkeletalRigNode skeletonRoot {
-        get {
-            if (_skeletonRoot is null) this.GetSkeletonRoot();
-            return _skeletonRoot;
-        }
-        private set {
-            _skeletonRoot = value;
+    public SkeletalRigNode skeletonRoot
+    {
+        get
+        {
+            if (skeleton is null) this.skeleton = new Skeleton(this.rootBone);
+            return this.skeleton[0];
         }
     }
+
+    private Skeleton skeleton;
 
     private int boneCount;
 
     // Selected animations
     public AnimationClip[] animationClips;
 
-    private float startAnimationTime;
+    private Dictionary<string, List<SerializedCurve>> animationCurves = 
+        new Dictionary<string, List<SerializedCurve>>();
+
+    private int currentFrame = -1;
+
+    /// <summary>
+    /// Index in the animation clips array
+    /// </summary>
+    public int chosenAnimation = 0;
+
+    public float timeBetweenFrames = 0.05f;
 
     // Animation cycle
     private void FixedUpdate()
     {
-        // foreach (var clip in animationClips)
-        // {
-        //     clip.SampleAnimation(this.skeletonRoot.transform.gameObject,
-        //         1);
-        // }
+        // check for time out
+        if (currentFrame == -1) return;
+
+        // check for animation progress
+        AnimationClip animationClip = animationClips[chosenAnimation];
+        if (currentFrame * this.timeBetweenFrames < animationClip.length)
+        {
+            Animate(currentFrame * this.timeBetweenFrames,
+                this.animationCurves[animationClip.name]);
+            this.currentFrame++;
+        }
+        else currentFrame = -1;
     }
 
     // Start is called before the first frame update
@@ -59,50 +77,52 @@ public class AnimatorCOR : MonoBehaviour
         }
 
         // build the skeleton
-        GetSkeletonRoot();
+        this.skeleton = new Skeleton(this.rootBone);
+
+        // // visualize centers of rotations
+        // foreach (var mesh in this.meshes)
+        // {
+        //     PlotCenters(mesh);
+        // }
 
         // load serialized animation curves
         // located in streaming assets by default
-
-    }
-
-    private void GetSkeletonRoot()
-    {
-        (this.skeletonRoot, this.boneCount) = BuildSkeleton(rootBone, 0);
-        Debug.Log($"The mesh has {boneCount} bones explored by the skeleton builder");
-    }
-
-    /// <summary>
-    /// Reads the animation curves into the skeleton
-    /// </summary>
-    /// <param name="root"></param>
-    /// <param name="path"></param>
-    private void ReadCurves(SkeletalRigNode root, string path)
-    {
-    }
-
-    /// <summary>
-    /// Builds a skeleton recursive using DFS and currying
-    /// </summary>
-    /// <param name="bone">Transform of the bone in the hierarchy</param>
-    /// <param name="index">Index of the bone, 0 for the root and +1 down the list</param>
-    /// <returns>Node and number of nodes explored</returns>
-    private (SkeletalRigNode, int) BuildSkeleton(Transform bone, int index)
-    {
-        var node = new SkeletalRigNode(index, bone);
-        int nodesExplored = 1;
-        // exploration
-        for (int i = 0; i < bone.childCount; i++)
+        foreach (var clip in this.animationClips)
         {
-            var (child, innerChildrenExplored) = 
-                BuildSkeleton(bone.GetChild(i), nodesExplored + index);
-            
-            node.AddChild(child);
-            
-            nodesExplored += innerChildrenExplored;
+            var curves = ReadSerializedCurves(clip.name);
+            this.animationCurves[clip.name] = curves;
         }
+    }
 
-        return (node, nodesExplored);
+    /// <summary>
+    /// Reads a serialized animation curve list from disk
+    /// </summary>
+    /// <param name="clip">Path to the clip, without extensions</param>
+    /// <returns></returns>
+    private static List<SerializedCurve> ReadSerializedCurves(string clip)
+    {
+        var clipName = clip + ".curves";
+        System.Xml.Serialization.XmlSerializer reader =
+            new System.Xml.Serialization.XmlSerializer(typeof(List<SerializedCurve>));
+        System.IO.StreamReader file = new System.IO.StreamReader(
+            Path.Combine(Application.streamingAssetsPath, clipName));
+        List<SerializedCurve> curves = (List<SerializedCurve>)reader.Deserialize(file);
+        file.Close();
+        return curves;
+    }
+
+    /// <summary>
+    /// Displays the centers of rotation using cubes
+    /// </summary>
+    /// <param name="mesh"></param>
+    private void PlotCenters(SkinnedMesh mesh)
+    {
+        var centers = mesh.GetCentersOfRotation();
+
+        foreach (var position in centers)
+        {
+            Instantiate(dataPoint, position, Quaternion.identity);
+        }
     }
 
     private Vector3[] EvaluateBoneTranslations()
@@ -114,7 +134,7 @@ public class AnimatorCOR : MonoBehaviour
     {
         var identity = new Vector4[this.boneCount];
         var identityQuaternion = Quaternion.identity;
-        
+
         // debug
         Debug.Log(identityQuaternion.ToString());
 
@@ -128,7 +148,7 @@ public class AnimatorCOR : MonoBehaviour
         return identity;
     }
 
-    public void Animate(float time)
+    public void Animate(float time, List<SerializedCurve> curves)
     {
         var rotations = EvaluateBoneRotations();
         var translations = EvaluateBoneTranslations();
